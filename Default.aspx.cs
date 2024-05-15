@@ -9,12 +9,13 @@ using System.Data;
 using System.Data.SqlClient;
 using System.Configuration;
 using System.Web.Configuration;
+using Newtonsoft.Json;
 
 namespace contactPersonWebFormNew
 {
     public partial class _Default : Page
     {
-        string connString = "SERVER=.\\sqlexpress;Database=contacts;User Id=sa;Password=remote;MultipleActiveResultSets=true";
+        static string connString = "SERVER=.\\sqlexpress;Database=contacts;User Id=sa;Password=remote;MultipleActiveResultSets=true";
         protected void Page_Load(object sender, EventArgs e)
         {
             if (!this.IsPostBack)
@@ -311,6 +312,53 @@ namespace contactPersonWebFormNew
             }
 
         }
+
+
+
+        [System.Web.Services.WebMethod]
+        public static string GetCurrentTime(string name)
+        {
+            return "Hello " + name + Environment.NewLine + "The Current Time is: " +
+                DateTime.Now.ToString();
+        }
+
+
+        [System.Web.Services.WebMethod(EnableSession = true)]
+        public static string find_person(string id)
+        {
+            DataSet ds = new DataSet();
+            string ret = "";
+            string sql = "";
+            sql = sql + " select p.person_id, p.person_name , p.person_last_name , p.phone_no , p.email, p.gender ";
+            sql = sql + " , p.state_id, s.state_name, p.city_id, c.city_name ";
+            sql = sql + " from persons p ";
+            sql = sql + " left outer join states s on s.state_id=p.state_id ";
+            sql = sql + " left outer join cities c on c.city_id=p.city_id ";
+            sql = sql + " where p.person_id = " + id;
+            try
+            {
+                //-----------------------------------
+                using (SqlConnection con = new SqlConnection(connString))
+                {
+                    con.Open();
+                    using (SqlCommand cmd = new SqlCommand(sql, con))
+                    {
+                        SqlDataAdapter sda = new SqlDataAdapter(cmd);
+                        sda.Fill(ds);
+                        con.Close();
+                        ret = JsonConvert.SerializeObject(ds.Tables[0]);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                var err = e.Message;
+            }
+            return ret;
+        }
+
+
+
 
         //----------- end of page---------------------------
 
